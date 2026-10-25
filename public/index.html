@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Naija Mobile Voting Portal</title>
+    <style>
+        body {
+            background-color: #111827;
+            color: #f3f4f6;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            margin: 0;
+            padding: 16px;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+        .container {
+            max-width: 440px;
+            margin: 0 auto;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+        .title {
+            color: #10b981;
+            font-size: 28px;
+            font-weight: 800;
+            margin: 0 0 4px 0;
+        }
+        .status {
+            color: #10b981;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .section-card {
+            background-color: rgba(31, 41, 55, 0.4);
+            border: 1px solid #1f2937;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 20px;
+        }
+        .section-title {
+            color: #34d399;
+            font-size: 18px;
+            font-weight: bold;
+            margin-top: 0;
+            margin-bottom: 16px;
+            border-bottom: 1px solid #1f2937;
+            padding-bottom: 8px;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+        .contestant-card {
+            background-color: #1f2937;
+            border: 1px solid rgba(55, 65, 81, 0.6);
+            border-radius: 12px;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+        }
+        .avatar {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #059669, #4f46e5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+            font-size: 20px;
+            margin-bottom: 8px;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .name {
+            font-weight: bold;
+            font-size: 15px;
+            color: #ffffff;
+            margin-bottom: 2px;
+        }
+        .region {
+            font-size: 10px;
+            color: #9ca3af;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 12px;
+        }
+        .vote-btn {
+            width: 100%;
+            background-color: #059669;
+            color: white;
+            font-weight: 600;
+            font-size: 12px;
+            padding: 8px 12px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.15s ease;
+        }
+        .vote-btn:active {
+            background-color: #047857;
+        }
+        .placeholder-text {
+            font-size: 12px;
+            color: #9ca3af;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="header">
+            <h1 class="title">Naija Housemates</h1>
+            <div id="lockdown-status" class="status">● Voting Window Active</div>
+        </div>
+
+        <div class="section-card">
+            <h2 class="section-title">Contestants</h2>
+            <div id="portal-grid" class="grid"></div>
+        </div>
+
+        <div class="section-card">
+            <h3 class="section-title" style="color:#34d399; font-size:14px; border:none; margin:0 0 8px 0; padding:0;">
+                Live Leaderboard Preview
+            </h3>
+            <div id="live-leaderboard" class="placeholder-text">
+                Awaiting real-time live synchronization updates...
+            </div>
+        </div>
+
+        <div class="section-card">
+            <h3 class="section-title" style="color:#34d399; font-size:14px; border:none; margin:0 0 8px 0; padding:0;">
+                My Voting Activity History
+            </h3>
+            <div id="vote-history" class="placeholder-text" style="color:#6b7280; font-style:normal;">
+                No telemetry signatures registered locally on this device session context.
+            </div>
+        </div>
+    </div>
+
+    <script>
+    async function checkLockdownStatus() {
+        try {
+            const res = await fetch('/api/evictions/active');
+            if (!res.ok) throw new Error("HTTP " + res.status);
+            const data = await res.json();
+            return Array.isArray(data) ? data.length > 0 : !!data?.isActive;
+        } catch (err) {
+            return true;
+        }
+    }
+
+    function renderHousemates(housemates) {
+        const container = document.getElementById('portal-grid');
+        if (!container) return;
+        
+        container.innerHTML = housemates.map(hm => {
+            return '<div class="contestant-card">' +
+                '<div class="avatar">' + hm.name.charAt(0) + '</div>' +
+                '<div class="name">' + hm.name + '</div>' +
+                '<div class="region">' + (hm.region || 'Naija') + '</div>' +
+                '<button onclick="castVote(\'' + (hm._id || hm.id) + '\')" class="vote-btn">' +
+                    'Vote to Save' +
+                '</button>' +
+            '</div>';
+        }).join('');
+    }
+
+    async function castVote(id) {
+        try {
+            const res = await fetch('/api/votes', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ housemateId: id })
+            });
+            if (res.status === 429) return alert("❌ Anti-Spam Mitigation: Limit is 3 votes per minute!");
+            if (!res.ok) throw new Error("Rejected");
+            alert("✅ Vote successfully committed to backend database!");
+        } catch(err) {
+            alert("❌ Network Error casting transaction payload.");
+        }
+    }
+
+    async function init() {
+        try {
+            await checkLockdownStatus();
+            const res = await fetch('/api/housemates');
+            let housemates = await res.json();
+            if (!housemates || housemates.length === 0) throw new Error("Empty DB");
+            renderHousemates(housemates);
+        } catch (err) {
+            renderHousemates([
+                { id: "1", name: "Chimezie", region: "East" },
+                { id: "2", name: "Funmi", region: "West" },
+                { id: "3", name: "Tunde", region: "North" },
+                { id: "4", name: "Amaka", region: "South" }
+            ]);
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', init);
+    if (document.readyState === 'interactive' || document.readyState === 'complete') { init(); }
+    </script>
+</body>
+</html>

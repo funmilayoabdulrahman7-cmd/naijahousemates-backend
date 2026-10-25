@@ -1,0 +1,3 @@
+{"active":true,"weekTitle":"Week 2","_id":"9ivMKHIg23rz6iO2"}
+{"active":false,"weekTitle":"Eviction Week 1","archivedAt":{"$$date":1792652127526},"standings":[{"name":"Funmi","finalVotes":1},{"name":"Amaka","finalVotes":0},{"name":"Chimezie","finalVotes":0},{"name":"Tunde","finalVotes":2}],"isArchive":true,"_id":"MhYJicSCtB3pswHA"}
+{"active":false,"weekTitle":"Eviction Week 2","archivedAt":{"$$date":1792652606360},"standings":[{"name":"Funmi","finalVotes":0},{"name":"Amaka","finalVotes":0},{"name":"Chimezie","finalVotes":0},{"name":"Tunde","finalVotes":0}],"isArchive":true,"_id":"bAGyRskQndPkkq31"}

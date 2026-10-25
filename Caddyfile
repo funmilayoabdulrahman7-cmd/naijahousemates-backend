@@ -1,0 +1,4 @@
+:8080 {
+    reverse_proxy localhost:3002
+    encode gzip zstd
+}

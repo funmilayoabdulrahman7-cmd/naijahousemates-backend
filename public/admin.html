@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Naija Voting - Admin Panel</title>
+    <style>
+        :root { --bg-color: #0d0f12; --card-bg: #161a22; --accent-color: #00e676; --text-color: #ffffff; --text-muted: #8b949e; --danger-color: #ff1744; --warn-color: #ff9100; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-color); padding: 16px; }
+        header { text-align: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid #21262d; }
+        h1 { color: var(--accent-color); font-size: 1.4rem; }
+        .panel { background: var(--card-bg); border-radius: 12px; padding: 16px; border: 1px solid #21262d; margin-bottom: 20px; }
+        .title { font-size: 1.1rem; font-weight: bold; margin-bottom: 12px; color: var(--accent-color); }
+        .status-badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 0.85rem; margin-top: 4px; }
+        .status-badge.open { background: rgba(0, 230, 118, 0.15); color: var(--accent-color); }
+        .status-badge.closed { background: rgba(255, 23, 68, 0.15); color: var(--danger-color); }
+        input { width: 100%; padding: 10px; background: #30363d; border: 1px solid #21262d; color: #fff; border-radius: 6px; font-size: 0.9rem; margin-bottom: 12px; }
+        button { width: 100%; padding: 12px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; color: #000; font-size: 0.95rem; margin-bottom: 10px; }
+        .btn-open { background: var(--accent-color); }
+        .btn-close { background: var(--warn-color); }
+        .btn-reset { background: var(--danger-color); color: #fff; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Naija Control Panel</h1>
+        <div id="live-status">Loading Status...</div>
+    </header>
+    <div class="panel">
+        <div class="title">Toggle Window Status</div>
+        <input type="text" id="open-title" placeholder="e.g. Eviction Week 3">
+        <button class="btn-open" onclick="openVoting()">OPEN VOTING WINDOW</button>
+        <button class="btn-close" onclick="closeVoting()">CLOSE VOTING WINDOW</button>
+    </div>
+    <div class="panel">
+        <div class="title">Weekly Rollover Reset</div>
+        <input type="text" id="next-title" placeholder="e.g. Eviction Week 4">
+        <button class="btn-reset" onclick="resetVoting()">ARCHIVE & ROLLOVER PORTAL</button>
+    </div>
+    <script>
+        async function getStatus() {
+            const res = await fetch('/api/evictions/active');
+            const data = await res.json();
+            const statusEl = document.getElementById('live-status');
+            if(data.active) {
+                statusEl.innerHTML = 'Active Window: <strong>' + data.weekTitle + '</strong> <span class="status-badge open">OPEN</span>';
+            } else {
+                statusEl.innerHTML = 'Active Window: <strong>' + data.weekTitle + '</strong> <span class="status-badge closed">CLOSED</span>';
+            }
+        }
+        async function openVoting() {
+            const title = document.getElementById('open-title').value;
+            if(!title) return alert('Enter a week title');
+            await fetch('/api/admin/open', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ title }) });
+            getStatus();
+        }
+        async function closeVoting() {
+            await fetch('/api/admin/close', { method: 'POST' });
+            getStatus();
+        }
+        async function resetVoting() {
+            const nextTitle = document.getElementById('next-title').value;
+            if(!nextTitle) return alert('Enter the next week title');
+            if(!confirm('Are you sure you want to wipe live counters and rollover?')) return;
+            await fetch('/api/admin/reset', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ nextTitle }) });
+            document.getElementById('next-title').value = '';
+            getStatus();
+        }
+        window.onload = getStatus;
+    </script>
+</body>
+</html>
